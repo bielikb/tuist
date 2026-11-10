@@ -26,7 +26,9 @@ defmodule Tuist.GitHistory.FileChanges do
   (`changes_ref_id`, `changes_position`). A commit whose place changed (a
   fast-forward, a rebuild of the refs) is queued again and written at the
   new place from its listing, or, once the listing expired, from the rows it
-  left at the old one.
+  left at the old one. The listing is kept for days
+  (`Tuist.GitHistory.listing_retention_days/0`): a commit no ref owns by
+  then is listed again by its next run.
 
   The rows of a ref that forks from none are kept. Any other ref's rows
   expire together, the file retention after the oldest of them was written,
@@ -141,7 +143,7 @@ defmodule Tuist.GitHistory.FileChanges do
 
   # A day early: the listing's files expire on their own, part by part.
   defp staged?(listing) do
-    days = Environment.coverage_retention_days().files
+    days = GitHistory.listing_retention_days()
     DateTime.after?(listing.inserted_at, DateTime.add(DateTime.utc_now(), -(days - 1), :day))
   end
 
