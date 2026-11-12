@@ -79,7 +79,17 @@ defmodule Tuist.GitHistory do
       "**/project.pbxproj",
       "**/Podfile.lock",
       "**/Cartfile.resolved",
-      ".xcode-version"
+      ".xcode-version",
+      # Gradle: build scripts and their logic, version catalogs, properties,
+      # dependency locks and the wrapper's Gradle version.
+      "**/*.gradle",
+      "**/*.gradle.kts",
+      "**/gradle.properties",
+      "**/*.versions.toml",
+      "**/gradle.lockfile",
+      "**/gradle-wrapper.properties",
+      "**/buildSrc/**",
+      "**/build-logic/**"
     ],
     commit_file_limit: 200_000
   }

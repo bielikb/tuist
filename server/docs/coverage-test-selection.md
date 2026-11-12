@@ -4,7 +4,7 @@ How Tuist skips the tests a change can't affect, using the per-test coverage evi
 
 **The invariant.** Coverage evidence only ever removes tests from what default selective testing would run, never adds to it, so off the default branch a coverage run never runs more than a default run. Within that, anything Tuist can't prove unaffected runs: new tests, tests without evidence, and every test whenever selection can't be computed. When coverage can't decide, the run is a plain selective testing run.
 
-The document has two parts. The [shared model](#strategy) (baselines, the rule pipeline, impact runs and their shards, storage, the API, the UI and the flag) holds for every build system and is written in build-system terms; a build system plugs in through the [hooks](#what-each-build-system-supplies), though some shared code still reads Xcode's names (listed under the hooks). The [Xcode](#xcode) part describes what only the Xcode client and its evidence do. Only Xcode selects today; Gradle, Mix and Cargo get a part like it when their selection lands.
+The document has two parts. The [shared model](#strategy) (baselines, the rule pipeline, impact runs and their shards, storage, the API, the UI and the flag) holds for every build system and is written in build-system terms; a build system plugs in through the [hooks](#what-each-build-system-supplies), though some shared code still reads Xcode's names (listed under the hooks). The [Xcode](#xcode) part describes what only the Xcode client and its evidence do. Only Xcode selects today; Gradle, Mix and Cargo get a part like it when their selection lands. Gradle already uploads the test-scoped evidence selection reads, from JUnit Platform tests (see [Code coverage](code-coverage.md#gradle)), and reports its runs' platform as none; it still lacks module hashing, a build context block and a client for the runs endpoint.
 
 ## Strategy
 
@@ -40,7 +40,7 @@ When the project isn't enabled, the baseline request answers `not_enabled`, the 
 **Not every hook is pluggable yet.** The shared code reads Xcode's names directly:
 
 - **Build context and scope.** The server reads only the `xcode` block. `Runs` stores it as `build_context`, and `Storage` keeps only its `scheme`, `test_plan` and `destination`. `Runs` and the baseline endpoint pass its `scheme` to `Baselines`. The Test Selection page searches runs by that scheme or test plan, and the run tab finds the baseline's runs by that scheme. A request without an `xcode` block has no scheme, so any commit whose measured set lists a scheme can be its baseline.
-- **Tracked files.** There's one server-wide list (`GitHistory.settings/1`'s `tracked_file_globs`, from configuration, with no per-project override) for every build system, and its defaults are Xcode's inputs. `build_system` picks nothing: it's stored on the impact run and shown on its Configuration sub-tab.
+- **Tracked files.** There's one server-wide list (`GitHistory.settings/1`'s `tracked_file_globs`, from configuration, with no per-project override) for every build system, and its defaults are Xcode's and Gradle's inputs. `build_system` picks nothing: it's stored on the impact run and shown on its Configuration sub-tab.
 - **Module hashing.** The run tab's module-level hash data is Xcode's `xcode_targets` (see [UI](#ui)).
 
 A second build system needs these turned into hooks first.
@@ -125,7 +125,7 @@ The baseline isn't a rule: it's resolved before the pipeline, and a run without 
 | 6 | `owned_without_evidence` (`OwnedWithoutEvidence`) | Selects every test in the `affected_modules` of each changed file no evidence includes (the baseline's, a test's newest or reproduced version, or target-level): a resource, a new file, or a declarations-only file. A file no module owns (empty list) or the client couldn't classify (absent) selects nothing. | Continue |
 | 7 | `unaffected` (`Unaffected`) | Skips every test still undecided. | Done |
 
-**Tracked files are the coverage carry list.** Rule 1 reads the setting coverage carry already stops at, so a test selection skips gets carried coverage, and a commit where carry stops makes selection fall back. A narrower list would skip tests whose coverage then shows as unknown; a wider one would fall back for no reason. The list is the same for every build system today, and its defaults are Xcode's (see [Rule inputs on Xcode](#rule-inputs-on-xcode)).
+**Tracked files are the coverage carry list.** Rule 1 reads the setting coverage carry already stops at, so a test selection skips gets carried coverage, and a commit where carry stops makes selection fall back. A narrower list would skip tests whose coverage then shows as unknown; a wider one would fall back for no reason. The list is the same for every build system today, and its defaults are Xcode's and Gradle's (see [Rule inputs on Xcode](#rule-inputs-on-xcode)).
 
 **`affected_modules` come from the client's graph.** For each changed file the client lists the test modules that depend, directly or not, on the module that owns it. An empty list means no module owns the file (a README, CI configuration); absent (`nil`) means the graph can't attribute it to one module, and such files belong on the tracked list instead.
 
